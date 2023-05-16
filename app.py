@@ -2,6 +2,12 @@ import os
 from bs4 import BeautifulSoup
 import pandas as pd
 from requests_html import HTMLSession
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 
 # define headers for requests
 HEADERS = {
@@ -90,7 +96,7 @@ def main():
     }
 
     # Define the directory to save the files
-    save_dir = "/Users/xion/Desktop/stockdata"
+    save_dir = "[your save directory path]"
     # Define the headers
     headers = ["Symbol", "Name", "Price (Intraday)", "Change", "% Change", "Volume", "Avg Vol (3 month)", "Market Cap", "PE Ratio (TTM)", "52 Week Range"]
 
@@ -104,13 +110,49 @@ def main():
 
             df.to_csv(os.path.join(save_dir, f"{category}_stocks.csv"), index=False)
 
+            # Load the data
+            most_active_stocks = pd.read_csv(os.path.join(save_dir, f"{category}_stocks.csv"))
+            
+            # Calculate basic statistics
+            mean_price = most_active_stocks['Price (Intraday)'].mean()
+            median_price = most_active_stocks['Price (Intraday)'].median()
+            std_price = most_active_stocks['Price (Intraday)'].std()
+
+            print(f"\nCategory: {category}")
+            print(f"Mean price: {mean_price}")
+            print(f"Median price: {median_price}")
+            print(f"Standard deviation of price: {std_price}")
+
+            # Plot a histogram of prices
+            plt.figure(figsize=(10, 6))
+            sns.histplot(most_active_stocks['Price (Intraday)'], bins=30, kde=True)
+            plt.title(f'Distribution of Prices for {category} stocks')
+            plt.xlabel('Price (Intraday)')
+            plt.ylabel('Frequency')
+            plt.show()
+
+            # Plot a scatterplot of volume vs. price
+            plt.figure(figsize=(10, 6))
+            sns.scatterplot(data=most_active_stocks, x='Volume', y='Price (Intraday)')
+            plt.title(f'Volume vs. Price for {category} stocks')
+            plt.xlabel('Volume')
+            plt.ylabel('Price (Intraday)')
+
+            # Format x-axis labels
+            ax = plt.gca()
+            ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: '{:0.0f}M'.format(x*1e-6) if x >= 1e6 else '{:0.0f}K'.format(x*1e-3) if x >= 1e3 else '{:0.0f}'.format(x)))
+
+            plt.show()
+
         # Fetch details of the first most active stock
         first_stock_url = f"{base_url}/{stocks[0][0]}/"
         first_stock_details = fetch_stock_details(session, first_stock_url)
         print(first_stock_details)
 
+
 if __name__ == "__main__":
     main()
+
 
 
 
